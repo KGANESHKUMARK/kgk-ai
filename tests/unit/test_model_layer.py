@@ -11,6 +11,9 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
+
+pytestmark = pytest.mark.requires_torch
+
 from unittest.mock import MagicMock, patch, PropertyMock
 
 from app.models.base import (

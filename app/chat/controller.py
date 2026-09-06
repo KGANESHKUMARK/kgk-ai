@@ -21,6 +21,7 @@ from app.logging_config import get_logger, generate_request_id
 from app.memory.manager import MemoryManager
 from app.models.base import BaseModelProvider, GenerationParams, GenerationResult
 from app.models.registry import registry as model_registry
+from app.rag.pipeline import RAGPipeline
 from app.tools.registry import ToolRegistry, tool_registry
 
 logger = get_logger("chat.controller")
@@ -70,6 +71,7 @@ class KGKChatController:
         model: Active model provider (from registry or injected).
         memory: Memory manager instance (optional).
         tools: Tool registry instance (optional).
+        rag: RAG pipeline instance (optional).
         conversations: In-memory conversation store.
     """
 
@@ -78,11 +80,13 @@ class KGKChatController:
         model: Optional[BaseModelProvider] = None,
         memory: Optional[MemoryManager] = None,
         tools: Optional[ToolRegistry] = None,
+        rag: Optional[RAGPipeline] = None,
     ) -> None:
         settings = get_settings()
         self.model: Optional[BaseModelProvider] = model or model_registry.active
         self.memory: Optional[MemoryManager] = memory if settings.enable_memory else None
         self.tools: Optional[ToolRegistry] = tools if settings.enable_tools else None
+        self.rag: Optional[RAGPipeline] = rag if settings.enable_rag else None
         self._conversations: dict[str, Conversation] = {}
         self._system_prompt: str = get_system_prompt()
 
@@ -161,10 +165,35 @@ class KGKChatController:
             )
             return response
 
-        # 5. Build model input
-        model_messages = conv.get_messages(include_system=True)
+        # 5. RAG retrieval (if enabled and available)
+        rag_context = ""
+        if use_rag and self.rag is not None:
+            try:
+                if self.rag.is_ready():
+                    rag_context = self.rag.get_context_for_prompt(message)
+                    if rag_context:
+                        rag_resp = self.rag.retrieve(message)
+                        response.sources = rag_resp.sources
+                        logger.info(
+                            f"RAG retrieved {len(rag_resp.chunks)} chunks",
+                            extra={"component": "chat.controller", "request_id": request_id, "rag_chunks": len(rag_resp.chunks)},
+                        )
+            except Exception as e:
+                logger.warning(f"RAG retrieval failed: {e}")
 
-        # 6. Generate response
+        # 6. Build model input (with RAG context if available)
+        model_messages = conv.get_messages(include_system=True)
+        if rag_context:
+            # Inject RAG context into the last user message
+            rag_enhanced_content = (
+                f"{model_messages[-1]['content']}\n\n"
+                f"--- Retrieved Knowledge ---\n{rag_context}\n--- End Retrieved Knowledge ---\n\n"
+                f"Use the above retrieved knowledge to answer the question. "
+                f"Cite sources when using this information."
+            )
+            model_messages[-1] = {"role": "user", "content": rag_enhanced_content}
+
+        # 7. Generate response
         try:
             result = self.model.generate(model_messages)
             response.text = result.text
@@ -179,13 +208,14 @@ class KGKChatController:
             response.latency_ms = (time.time() - start_time) * 1000
             return response
 
-        # 7. Add assistant response to conversation
+        # 8. Add assistant response to conversation
         conv.add_message("assistant", result.text, metadata={
             "request_id": request_id,
             "finish_reason": result.finish_reason,
+            "sources": response.sources,
         })
 
-        # 8. Save to memory if enabled
+        # 9. Save to memory if enabled
         if use_memory and self.memory is not None:
             try:
                 self.memory.save_memory(
@@ -196,7 +226,7 @@ class KGKChatController:
             except Exception as e:
                 logger.warning(f"Memory save failed: {e}")
 
-        # 9. Finalize response
+        # 10. Finalize response
         response.latency_ms = (time.time() - start_time) * 1000
 
         logger.info(

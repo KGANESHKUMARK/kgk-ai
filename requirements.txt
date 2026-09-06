@@ -1,0 +1,36 @@
+# KGK AI — Production Dependencies
+# Python 3.10+ required (3.12 recommended for Hugging Face ZeroGPU)
+
+# Deep learning framework
+torch>=2.8.0
+
+# Hugging Face model loading and inference
+transformers>=4.46.0
+huggingface-hub>=0.26.0
+accelerate>=1.0.0
+bitsandbytes>=0.44.0
+
+# Hugging Face Spaces (ZeroGPU support)
+gradio>=4.0.0
+spaces>=0.0.1
+
+# Embeddings for RAG
+sentence-transformers>=3.0.0
+
+# Vector store
+faiss-cpu>=1.9.0
+
+# API framework
+fastapi>=0.115.0
+uvicorn>=0.32.0
+
+# Configuration and validation
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Document parsing for RAG
+PyPDF2>=3.0.0
+
+# Sandboxed Python execution for tools
+RestrictedPython>=7.0.0

@@ -1,0 +1,86 @@
+# KGK AI — .dockerignore
+# Reduces Docker build context size by excluding unnecessary files.
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Linting
+.ruff_cache/
+
+# Hugging Face model files (downloaded at runtime)
+*.bin
+*.safetensors
+*.gguf
+*.pt
+*.pth
+cache/
+.cache/
+huggingface/
+
+# Knowledge base vectorstore (rebuilt on startup)
+knowledge/vectorstore/*.faiss
+knowledge/vectorstore/*.pkl
+knowledge/processed/*.json
+
+# Data (runtime generated)
+data/conversations/*.json
+data/memory/*.json
+data/datasets/*.json
+
+# Logs
+logs/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Documentation (not needed in image)
+*.md
+LICENSE
+
+# Docker
+Dockerfile
+.dockerignore

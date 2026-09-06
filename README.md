@@ -1,3 +1,14 @@
+---
+title: KGK AI
+emoji: 🤖
+colorFrom: blue
+colorTo: yellow
+sdk: gradio
+sdk_version: "4.0.0"
+app_file: app.py
+pinned: false
+---
+
 # KGK AI
 
 **AI Intelligence by KGK**
@@ -138,8 +149,14 @@ All configuration is via environment variables. See `.env.example` for the full 
 | `EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Embedding model |
 | `ENABLE_RAG` | `true` | Enable RAG pipeline |
 | `ENABLE_MEMORY` | `true` | Enable memory system |
+| `CONTEXT_WINDOW_TOKENS` | `4096` | Max tokens for context window |
+| `ENABLE_SUMMARIZATION` | `true` | Summarize old messages |
 | `ENABLE_TOOLS` | `true` | Enable tool system |
 | `ENABLE_AGENTS` | `false` | Enable agent system |
+| `ENABLE_API_AUTH` | `false` | Enable API key authentication |
+| `API_KEY` | (unset) | API key (required when auth enabled) |
+| `ENABLE_CORS` | `true` | Enable CORS middleware |
+| `KGK_MODE` | `ui` | Deployment mode (ui/api) |
 | `CHUNK_SIZE` | `512` | RAG chunk size (tokens) |
 | `TOP_K_RETRIEVAL` | `5` | RAG retrieval count |
 | `HF_TOKEN` | (unset) | Hugging Face token (for private models) |
@@ -394,23 +411,24 @@ See `training/README.md` for:
 ### v1 (Current)
 
 - [x] Architecture & repository setup
-- [ ] Model inference
-- [ ] KGK chat with personality
-- [ ] Gradio UI with streaming
-- [ ] RAG pipeline
-- [ ] Memory (short-term + long-term)
-- [ ] Tools (calculator, Python, search)
-- [ ] Agents (base + planner)
-- [ ] Testing suite
-- [ ] Hugging Face deployment
+- [x] Model inference (transformers, streaming, quantization)
+- [x] KGK chat with personality
+- [x] Gradio UI with streaming
+- [x] RAG pipeline (FAISS, document ingestion, source citations)
+- [x] Memory (short-term + long-term, context window, summarization)
+- [x] Tools (calculator, Python sandbox, document search)
+- [x] Agents (ReAct loop, task planner, agent executor)
+- [x] API (FastAPI REST, WebSocket streaming, API key auth, CORS)
+- [x] Testing suite (290+ unit tests)
+- [x] Hugging Face deployment (ZeroGPU, Docker, CI/CD)
 - [ ] Fine-tuning pipeline
 - [ ] Production hardening
 
 ### v2 (Future)
 
 - [ ] Better RAG (re-ranking, hybrid search)
-- [ ] Better memory (semantic search, summarization)
-- [ ] Agent router
+- [ ] Semantic memory search
+- [ ] Agent router (multi-agent)
 - [ ] Research agent
 - [ ] Coding agent
 - [ ] Data science agent

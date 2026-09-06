@@ -8,8 +8,8 @@ Write-Host ""
 $failed = $false
 
 # Batch 1: Non-torch, non-faiss tests
-Write-Host "[1/4] Running core tests (config, logging, interfaces, chat, UI, tools, memory, agents, API)..." -ForegroundColor Yellow
-python -m pytest tests/unit/test_config.py tests/unit/test_logging.py tests/unit/test_base_interfaces.py tests/unit/test_chat_controller.py tests/unit/test_ui.py tests/unit/test_tools.py tests/unit/test_memory.py tests/unit/test_agents.py tests/unit/test_api.py -q --tb=short
+Write-Host "[1/4] Running core tests (config, logging, interfaces, chat, UI, tools, memory, agents, API, deployment)..." -ForegroundColor Yellow
+python -m pytest tests/unit/test_config.py tests/unit/test_logging.py tests/unit/test_base_interfaces.py tests/unit/test_chat_controller.py tests/unit/test_ui.py tests/unit/test_tools.py tests/unit/test_memory.py tests/unit/test_agents.py tests/unit/test_api.py tests/unit/test_deployment.py -q --tb=short
 if ($LASTEXITCODE -ne 0) { $failed = $true }
 
 # Batch 2: Torch tests (model layer)

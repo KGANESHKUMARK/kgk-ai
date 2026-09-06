@@ -6,12 +6,13 @@ torch>=2.8.0
 
 # Hugging Face model loading and inference
 transformers>=4.46.0
-huggingface-hub>=0.26.0
+huggingface-hub>=0.25.0,<1.0.0
 accelerate>=1.0.0
 bitsandbytes>=0.44.0
 
 # Hugging Face Spaces (ZeroGPU support)
-gradio>=5.0.0
+# gradio>=5.7.1 required: fixes HfFolder ImportError with huggingface_hub 0.x
+gradio>=5.7.1
 spaces>=0.0.1
 
 # Embeddings for RAG

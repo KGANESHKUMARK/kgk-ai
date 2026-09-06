@@ -25,6 +25,9 @@ from app.models.base import BaseModelProvider, GenerationParams, GenerationResul
 from app.models.registry import registry as model_registry
 from app.rag.pipeline import RAGPipeline
 from app.tools.registry import ToolRegistry, tool_registry
+from app.agents.executor import AgentExecutor
+from app.agents.react import ReActAgent
+from app.agents.planner import TaskPlanner
 
 logger = get_logger("chat.controller")
 
@@ -104,6 +107,20 @@ class KGKChatController:
             reserved_for_response=settings.reserved_response_tokens,
             summarizer=summarizer,
         )
+
+        # Agent executor for multi-step tool-using tasks
+        self.agent: Optional[AgentExecutor] = None
+        if settings.enable_agents and self.model is not None:
+            react_agent = ReActAgent(
+                model=self.model,
+                tools=self.tools if settings.enable_tools else None,
+            )
+            planner = TaskPlanner(model=self.model)
+            self.agent = AgentExecutor(
+                agent=react_agent,
+                planner=planner,
+                model=self.model,
+            )
 
     def chat(
         self,
@@ -196,7 +213,50 @@ class KGKChatController:
             except Exception as e:
                 logger.warning(f"RAG retrieval failed: {e}")
 
-        # 6. Build model input (with context window management + RAG context)
+        # 6. Agent execution (if enabled and tools are requested)
+        if use_tools and self.agent is not None:
+            try:
+                context_text = conv.get_history_text(max_messages=10)
+                agent_result = self.agent.run(message, context=context_text)
+                if agent_result.success:
+                    response.text = agent_result.response
+                    response.tools_used = agent_result.tools_used
+                    if agent_result.sources:
+                        response.sources.extend(agent_result.sources)
+                    response.model = self.model.get_info().name if self.model.health_check() else "unknown"
+
+                    conv.add_message("assistant", agent_result.response, metadata={
+                        "request_id": request_id,
+                        "sources": response.sources,
+                        "tools_used": agent_result.tools_used,
+                        "agent": True,
+                    })
+
+                    if use_memory and self.memory is not None:
+                        try:
+                            self.memory.save_memory(
+                                content=f"User: {message}\nAssistant: {agent_result.response}",
+                                conversation_id=conversation_id,
+                                metadata={"request_id": request_id, "agent": True},
+                            )
+                        except Exception as e:
+                            logger.warning(f"Memory save failed: {e}")
+
+                    response.latency_ms = (time.time() - start_time) * 1000
+                    logger.info(
+                        f"Agent response: {len(response.text)} chars, tools={agent_result.tools_used}",
+                        extra={
+                            "component": "chat.controller",
+                            "request_id": request_id,
+                            "tools_used": agent_result.tools_used,
+                            "agent": True,
+                        },
+                    )
+                    return response
+            except Exception as e:
+                logger.warning(f"Agent execution failed, falling back to direct generation: {e}")
+
+        # 7. Build model input (with context window management + RAG context)
         model_messages = self.context_window.get_messages_for_model(conv, include_system=True)
         if rag_context:
             # Inject RAG context into the last user message
@@ -208,7 +268,7 @@ class KGKChatController:
             )
             model_messages[-1] = {"role": "user", "content": rag_enhanced_content}
 
-        # 7. Generate response
+        # 8. Generate response
         try:
             result = self.model.generate(model_messages)
             response.text = result.text
@@ -223,14 +283,14 @@ class KGKChatController:
             response.latency_ms = (time.time() - start_time) * 1000
             return response
 
-        # 8. Add assistant response to conversation
+        # 9. Add assistant response to conversation
         conv.add_message("assistant", result.text, metadata={
             "request_id": request_id,
             "finish_reason": result.finish_reason,
             "sources": response.sources,
         })
 
-        # 9. Save to memory if enabled
+        # 10. Save to memory if enabled
         if use_memory and self.memory is not None:
             try:
                 self.memory.save_memory(
@@ -241,7 +301,7 @@ class KGKChatController:
             except Exception as e:
                 logger.warning(f"Memory save failed: {e}")
 
-        # 10. Finalize response
+        # 11. Finalize response
         response.latency_ms = (time.time() - start_time) * 1000
 
         logger.info(

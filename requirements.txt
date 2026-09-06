@@ -11,7 +11,7 @@ accelerate>=1.0.0
 bitsandbytes>=0.44.0
 
 # Hugging Face Spaces (ZeroGPU support)
-gradio>=4.0.0
+gradio>=5.0.0
 spaces>=0.0.1
 
 # Embeddings for RAG

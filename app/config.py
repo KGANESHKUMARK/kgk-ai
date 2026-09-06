@@ -69,6 +69,10 @@ class KGKSettings(BaseSettings):
     enable_memory: bool = Field(default=True)
     memory_dir: str = Field(default="data/conversations")
     long_term_memory_dir: str = Field(default="data/memory")
+    context_window_tokens: int = Field(default=4096, ge=512, description="Maximum tokens for conversation context window.")
+    reserved_response_tokens: int = Field(default=1024, ge=128, description="Tokens reserved for model response generation.")
+    enable_summarization: bool = Field(default=True, description="Summarize old messages when context window is exceeded.")
+    max_summary_chars: int = Field(default=500, ge=100, description="Maximum characters for conversation summaries.")
 
     # --- Tools Configuration ---
     enable_tools: bool = Field(default=True)

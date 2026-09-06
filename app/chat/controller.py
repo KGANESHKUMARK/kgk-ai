@@ -19,6 +19,8 @@ from app.chat.conversation import Conversation
 from app.config import get_settings
 from app.logging_config import get_logger, generate_request_id
 from app.memory.manager import MemoryManager
+from app.memory.context_window import ContextWindowManager
+from app.memory.summarizer import ConversationSummarizer
 from app.models.base import BaseModelProvider, GenerationParams, GenerationResult
 from app.models.registry import registry as model_registry
 from app.rag.pipeline import RAGPipeline
@@ -89,6 +91,19 @@ class KGKChatController:
         self.rag: Optional[RAGPipeline] = rag if settings.enable_rag else None
         self._conversations: dict[str, Conversation] = {}
         self._system_prompt: str = get_system_prompt()
+
+        # Context window manager with optional summarizer
+        summarizer = None
+        if settings.enable_summarization:
+            summarizer = ConversationSummarizer(
+                model=self.model,
+                max_summary_chars=settings.max_summary_chars,
+            )
+        self.context_window = ContextWindowManager(
+            max_tokens=settings.context_window_tokens,
+            reserved_for_response=settings.reserved_response_tokens,
+            summarizer=summarizer,
+        )
 
     def chat(
         self,
@@ -181,8 +196,8 @@ class KGKChatController:
             except Exception as e:
                 logger.warning(f"RAG retrieval failed: {e}")
 
-        # 6. Build model input (with RAG context if available)
-        model_messages = conv.get_messages(include_system=True)
+        # 6. Build model input (with context window management + RAG context)
+        model_messages = self.context_window.get_messages_for_model(conv, include_system=True)
         if rag_context:
             # Inject RAG context into the last user message
             rag_enhanced_content = (
@@ -298,8 +313,8 @@ class KGKChatController:
         # Add user message
         conv.add_message("user", message)
 
-        # Build model input
-        model_messages = conv.get_messages(include_system=True)
+        # Build model input (with context window management)
+        model_messages = self.context_window.get_messages_for_model(conv, include_system=True)
 
         # Stream generation
         full_text = ""

@@ -85,6 +85,10 @@ class KGKSettings(BaseSettings):
     # --- API Configuration ---
     api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=7860, ge=1, le=65535)
+    enable_api_auth: bool = Field(default=False, description="Enable API key authentication.")
+    api_key: str = Field(default="", description="API key for authentication. Required when enable_api_auth is True.")
+    enable_cors: bool = Field(default=True, description="Enable CORS middleware.")
+    cors_origins: str = Field(default="*", description="Comma-separated allowed CORS origins.")
 
     # --- UI Configuration ---
     ui_title: str = Field(default="KGK AI")

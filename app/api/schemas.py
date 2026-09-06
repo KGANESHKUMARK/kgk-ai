@@ -18,11 +18,17 @@ class ChatRequest(BaseModel):
         message: The user's message text.
         conversation_id: Optional conversation identifier.
         stream: Whether to stream the response.
+        use_memory: Whether to include memory context.
+        use_rag: Whether to use RAG retrieval.
+        use_tools: Whether to use tools/agents.
     """
 
     message: str = Field(..., min_length=1, max_length=10000)
     conversation_id: str = Field(default="default")
     stream: bool = Field(default=False)
+    use_memory: bool = Field(default=True)
+    use_rag: bool = Field(default=True)
+    use_tools: bool = Field(default=True)
 
 
 class ChatResponse(BaseModel):
@@ -73,3 +79,37 @@ class ToolListResponse(BaseModel):
     """
 
     tools: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ErrorResponse(BaseModel):
+    """Standard error response.
+
+    Attributes:
+        error: Error code.
+        message: Human-readable error message.
+        request_id: Optional request identifier.
+    """
+
+    error: str
+    message: str
+    request_id: str = ""
+
+
+class WebSocketMessage(BaseModel):
+    """WebSocket message schema.
+
+    Attributes:
+        type: Message type ('chat', 'ping').
+        message: Chat message text (for 'chat' type).
+        conversation_id: Conversation identifier.
+        use_memory: Whether to include memory context.
+        use_rag: Whether to use RAG retrieval.
+        use_tools: Whether to use tools/agents.
+    """
+
+    type: str = Field(default="chat")
+    message: str = Field(default="")
+    conversation_id: str = Field(default="default")
+    use_memory: bool = Field(default=True)
+    use_rag: bool = Field(default=True)
+    use_tools: bool = Field(default=True)

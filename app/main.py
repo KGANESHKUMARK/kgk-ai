@@ -61,31 +61,15 @@ def run_api() -> None:
 
 
 def run_ui() -> None:
-    """Run the Gradio UI.
-
-    This will be implemented in Phase 5 (Gradio UI).
-    For now, it launches a minimal placeholder.
-    """
-    import gradio as gr
+    """Run the Gradio UI."""
+    from app.ui.gradio_app import launch_ui
 
     settings = get_settings()
     logger = get_logger("main")
 
-    logger.info("Starting KGK AI Gradio UI (placeholder)", extra={"component": "main"})
+    logger.info("Starting KGK AI Gradio UI", extra={"component": "main"})
 
-    def placeholder_chat(message: str, history: list) -> str:
-        return (
-            "KGK AI is in Phase 1 (Architecture). "
-            "Chat functionality will be available after Phase 4. "
-            "Current phase: Repository setup and base interfaces."
-        )
-
-    demo = gr.ChatInterface(
-        fn=placeholder_chat,
-        title=settings.ui_title,
-        description=settings.ui_subtitle,
-    )
-    demo.launch(server_name=settings.api_host, server_port=settings.api_port)
+    launch_ui(host=settings.api_host, port=settings.api_port)
 
 
 def main() -> None:

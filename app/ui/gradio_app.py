@@ -164,6 +164,13 @@ def clear_conversation(conversation_id: str = "default") -> str:
     return "No conversation found to clear."
 
 
+def _gradio_version() -> tuple[int, int]:
+    """Get Gradio major.minor version."""
+    import gradio as gr
+    parts = gr.__version__.split(".")
+    return (int(parts[0]), int(parts[1]))
+
+
 def create_ui():
     """Create and configure the Gradio UI.
 
@@ -173,10 +180,18 @@ def create_ui():
     import gradio as gr
 
     settings = get_settings()
+    ver = _gradio_version()
 
-    with gr.Blocks(
-        title=settings.ui_title,
-    ) as demo:
+    # Gradio 5.x: theme/css on Blocks(); Gradio 6.x: on launch()
+    blocks_kwargs: dict[str, Any] = {"title": settings.ui_title}
+    if ver < (6, 0):
+        blocks_kwargs["theme"] = gr.themes.Soft()
+        blocks_kwargs["css"] = (
+            ".kgk-header { text-align: center; margin-bottom: 1rem; }"
+            " .kgk-footer { text-align: center; margin-top: 2rem; color: #888; font-size: 0.85rem; }"
+        )
+
+    with gr.Blocks(**blocks_kwargs) as demo:
         # Header
         gr.Markdown(
             f"# {settings.ui_title}\n\n**{settings.ui_subtitle}**",
@@ -294,15 +309,23 @@ def launch_ui(
         extra={"component": "ui", "host": host, "port": port},
     )
 
+    import gradio as gr
+    ver = _gradio_version()
+
     demo = create_ui()
-    demo.launch(
-        server_name=host,
-        server_port=port,
-        share=share,
-        show_error=True,
-        theme="Soft",
-        css="""
-        .kgk-header { text-align: center; margin-bottom: 1rem; }
-        .kgk-footer { text-align: center; margin-top: 2rem; color: #888; font-size: 0.85rem; }
-        """,
-    )
+
+    launch_kwargs: dict[str, Any] = {
+        "server_name": host,
+        "server_port": port,
+        "share": share,
+        "show_error": True,
+    }
+    # Gradio 6.x: theme/css moved to launch()
+    if ver >= (6, 0):
+        launch_kwargs["theme"] = gr.themes.Soft()
+        launch_kwargs["css"] = (
+            ".kgk-header { text-align: center; margin-bottom: 1rem; }"
+            " .kgk-footer { text-align: center; margin-top: 2rem; color: #888; font-size: 0.85rem; }"
+        )
+
+    demo.launch(**launch_kwargs)
